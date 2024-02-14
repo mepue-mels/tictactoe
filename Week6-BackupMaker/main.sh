@@ -1,28 +1,27 @@
-#!/usr/bin/env sh
+#! /bin/bash
 
-file_type=""
+copy_file=$1
+copy_directory=$2
 
-condition=""
+current_date=$(date +"%Y-%m-%d %H:%M:%S")
 
-while getopts ":t:" option; do
-    case $option in
-        t)
-            file_type=$OPTARG
+while getopts ":hdwm" opt; do
+    case $opt in
+        h)
+            #target_date = $(date -d "$current_date + 1 hour" + "%Y-%m-%d %H:%M:%S")
+            echo "h"
+            ;;
+        d)
+            target_date = $(date -d "$current_date + 1 day" + "%Y-%m-%d %H:%M:%S")
+            ;;
+        w)
+            target_date = $(date -d "$current_date + 1 week" + "%Y-%m-%d %H:%M:%S")
+            ;;
+        m)
+            target_date = $(date -d "$current_date + 1 month" + "%Y-%m-%d %H:%M:%S")
             ;;
         \?)
-            echo "Invalid option!"
-            exit;;
+            echo "Invalid option: -$OPTARG" >&2
+            ;;
     esac
 done
-
-case $file_type in
-    file)
-        echo "File detected."
-        ;;
-    dir)
-        echo "Directory detected."
-        ;;
-    *)
-        echo "Error."
-        ;;
-esac
