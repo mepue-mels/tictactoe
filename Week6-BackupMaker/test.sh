@@ -1,11 +1,19 @@
 #!/bin/bash
 
+#executioner script
+#must be executed with external daemon
+
 current_date=$(date +%s)
 last_targdate=$(cat targdate)
 state=$(cat state)
 
 function Copy() {
-    echo "wow"
+    local file="$1"
+    local destination="$2"
+
+    cp $file "$destination/"
+
+    echo "$file to $destination | $(date)" >> log
 }
 
 if [ $state -eq 0 ]; then
@@ -30,24 +38,18 @@ if [ $state -eq 0 ]; then
                 echo "Invalid option: -$OPTARG" >&2
                 ;;
         esac
-
-        echo $target_date >| targdate
     done
+    shift $((OPTIND - 1))  # Shift command line arguments to skip processed options
 
+    Copy "$1" "$2"
+
+    echo "$target_date" >| targdate
     sed -i '' 's/1/0/g' state
 
-    while [ 1 ]; do
-        if [ $current_date -gt $(cat targdate) ]; then
-            Copy
-            sed -i '' 's/0/1/g' state
-            break
-        fi
-        current_date=$(date +%s)
-    done
-else
+elif [ $state -eq 1 ]; then
     while [ 1 ]; do
         if [ $current_date -gt $last_targdate ]; then
-            Copy
+            Copy "$1" "$2"
             sed -i '' 's/0/1/g' state
             echo 0 >| state
             break
