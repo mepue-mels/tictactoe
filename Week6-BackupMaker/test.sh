@@ -1,59 +1,58 @@
 #!/bin/bash
 
-#executioner script
-#must be executed with external daemon
+target_date=""
 
-current_date=$(date +%s)
-last_targdate=$(cat targdate)
-state=$(cat state)
-
-function Copy() {
+function CheckFile() {
     local file="$1"
-    local destination="$2"
+    local directory="$2"
 
-    cp $file "$destination/"
+    if [ ! -f $file ]; then
+        echo "$file is not a file or does not exit."
+        exit 1;
+    fi
 
-    echo "$file to $destination | $(date)" >> log
+    if [ ! -d $directory ]; then
+        echo "$directory is not a directory or does not exist."
+        exit 1;
+    fi
 }
 
-if [ $state -eq 0 ]; then
-    while getopts ":hdwm" opt; do
-        case $opt in
-            h) #hourly
-                target_date=$(date -v+2S +%s)
-                ;;
-            d) #daily
-                target_date=$(date -v+1d +%s)
-                ;;
-            w) #weekly
-                target_date=$(date -v+1w +%s)
-                ;;
-            m) #monthly adjustment
-                target_date=$(date -v+1m +%s)
-                ;;
-            :)
-                echo "Option -$OPTARG requires an argument." >&2
-                ;;
-            \?)
-                echo "Invalid option: -$OPTARG" >&2
-                ;;
-        esac
-    done
-    shift $((OPTIND - 1))  # Shift command line arguments to skip processed options
+function Request() {
+    local file="$1"
+    local directory="$2"
+    local date="$3"
+    original_date=$(date -r "$target_date" +"%Y-%m-%d %H:%M:%S")
 
-    Copy "$1" "$2"
+    CheckFile $file $directory
 
-    echo "$target_date" >| targdate
-    sed -i '' 's/1/0/g' state
+    echo "$date" >> jobs
+    echo "cp $file $directory" >> jobs
 
-elif [ $state -eq 1 ]; then
-    while [ 1 ]; do
-        if [ $current_date -gt $last_targdate ]; then
-            Copy "$1" "$2"
-            sed -i '' 's/0/1/g' state
-            echo 0 >| state
-            break
-        fi
-        current_date=$(date +%s)
-    done
+    echo "Backup scheduled for $file to $directory on $original_date"
+}
+
+if [ -z "$2" ] || [ -z "$3" ]; then
+    echo "Usage: $0 [-hdwmc] <file> <directory>"
+    exit 1
 fi
+
+while getopts ":hdwmc" opt; do
+    case $opt in
+        h|d|w|m)
+            target_date=$(date -v+2S +%s)
+            Request "$2" "$3" $target_date
+            ;;
+        c)
+            ;;
+        :)
+            echo "Option -$OPTARG requires an argument."
+            exit 1
+            ;;
+        \?)
+            echo "Invalid option: -$OPTARG"
+            exit 1
+            ;;
+    esac
+done
+
+shift $((OPTIND - 1))
