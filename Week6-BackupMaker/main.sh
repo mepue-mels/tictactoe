@@ -37,6 +37,8 @@ function Read() {
     while IFS= read -r target_date && IFS= read -r job; do
         if [ "$current_date" -gt "$target_date" ]; then
             $job
+
+            sed -i '' "/$job/{x;d;}; 1{h;d;}; x" jobs
         fi
     done < "$job_file"
 }
@@ -52,7 +54,7 @@ while getopts ":hdwmc" opt; do
     case $opt in
         h|d|w|m)
             isEmptyArgs $2 $3
-            target_date=$(date -v+2S +%s)
+            target_date=$(date -v+1m +%s)
             Request "$2" "$3" $target_date
             ;;
         c)
