@@ -1,6 +1,8 @@
 #!/bin/bash
 
+current_date=$(date +%s)
 target_date=""
+job_file="jobs"
 
 function CheckFile() {
     local file="$1"
@@ -31,18 +33,30 @@ function Request() {
     echo "Backup scheduled for $file to $directory on $original_date"
 }
 
-if [ -z "$2" ] || [ -z "$3" ]; then
-    echo "Usage: $0 [-hdwmc] <file> <directory>"
-    exit 1
-fi
+function Read() {
+    while IFS= read -r target_date && IFS= read -r job; do
+        if [ "$current_date" -gt "$target_date" ]; then
+            $job
+        fi
+    done < "$job_file"
+}
+
+function isEmptyArgs() {
+    if [ -z "$1" ] || [ -z "$2" ]; then
+        echo "Usage: $0 [-hdwmc] <file> <directory>"
+        exit 1
+    fi
+}
 
 while getopts ":hdwmc" opt; do
     case $opt in
         h|d|w|m)
+            isEmptyArgs $2 $3
             target_date=$(date -v+2S +%s)
             Request "$2" "$3" $target_date
             ;;
         c)
+            Read
             ;;
         :)
             echo "Option -$OPTARG requires an argument."
